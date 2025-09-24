@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Beehive Monitor</title>
+		<link rel="stylesheet" href="/static/css/styles.css" />
+	</head>
+	<body>
+		<header class="site-header">
+			<h1>Beehive Monitor</h1>
+			<p class="subtitle">Live temperature & humidity</p>
+		</header>
+
+		<main class="container">
+			<section class="card readings">
+				<div class="reading">
+					<h2>Temperature</h2>
+					<p id="temp">— °C</p>
+				</div>
+				<div class="reading">
+					<h2>Humidity</h2>
+					<p id="hum">— %</p>
+				</div>
+			</section>
+
+			<section class="card status" id="status">
+				Loading sensor...
+			</section>
+		</main>
+
+		<footer class="site-footer">
+			<small>Updated every 2 seconds · Local demo uses a mock if hardware is unavailable</small>
+		</footer>
+
+		<script>
+			async function fetchReading() {
+				try {
+					const res = await fetch('/api/sensor');
+					const data = await res.json();
+					const tempEl = document.getElementById('temp');
+					const humEl = document.getElementById('hum');
+					const statusEl = document.getElementById('status');
+
+					if (data.error) {
+						statusEl.textContent = 'Error: ' + data.error;
+						tempEl.textContent = '— °C';
+						humEl.textContent = '— %';
+						statusEl.classList.add('error');
+					} else {
+						statusEl.textContent = 'OK';
+						statusEl.classList.remove('error');
+						tempEl.textContent = (data.temperature_c !== null) ? data.temperature_c + ' °C' : '— °C';
+						humEl.textContent = (data.humidity !== null) ? data.humidity + ' %' : '— %';
+					}
+				} catch (e) {
+					document.getElementById('status').textContent = 'Fetch error';
+				}
+			}
+
+			// Poll every 2s
+			fetchReading();
+			setInterval(fetchReading, 2000);
+		</script>
+	</body>
+</html>
