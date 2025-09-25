@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Camera View</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+      .controls { margin-bottom: 12px; }
+      label { margin-right: 8px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Camera</h1>
+      <nav><a href="/">Dashboard</a> | <a href="/dht_records">DHT Records</a></nav>
+    </header>
+    <main>
+      <div class="controls">
+        <label>Size: <select id="size"><option>640x480</option><option>320x240</option><option>1280x720</option></select></label>
+        <label>Framerate: <input id="framerate" type="number" value="15" min="1" max="60"></label>
+        <label>Quality: <input id="quality" type="number" value="80" min="10" max="95"></label>
+        <button id="apply">Apply</button>
+      </div>
+
+      <div>
+        <img id="camera" src="/camera_feed" alt="camera" style="max-width:100%; border:1px solid #ccc;"/>
+      </div>
+    </main>
+
+    <script>
+      function updateFeed(){
+        const size = document.getElementById('size').value;
+        const fr = document.getElementById('framerate').value;
+        const q = document.getElementById('quality').value;
+        const img = document.getElementById('camera');
+        img.src = `/camera_feed?size=${size}&framerate=${fr}&quality=${q}`;
+      }
+      document.getElementById('apply').addEventListener('click', updateFeed);
+    </script>
+  </body>
+</html>

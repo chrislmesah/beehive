@@ -10,6 +10,11 @@
 		<header class="site-header">
 			<h1>Beehive Monitor</h1>
 			<p class="subtitle">Live temperature & humidity</p>
+			<nav class="main-nav">
+				<a href="/">Dashboard</a> |
+				<a href="/camera">Camera</a> |
+				<a href="/dht_records">DHT Records</a>
+			</nav>
 		</header>
 
 		<main class="container">
@@ -21,6 +26,17 @@
 				<div class="reading">
 					<h2>Humidity</h2>
 					<p id="hum">— %</p>
+				</div>
+				<div class="reading">
+					<h2>Motion</h2>
+					<p id="motion">—</p>
+				</div>
+			</section>
+
+			<section class="card camera-card">
+				<h2>Camera</h2>
+				<div class="camera-wrapper">
+					<img id="cameraFeed" src="/camera_feed" alt="Camera feed" />
 				</div>
 			</section>
 
@@ -42,6 +58,8 @@
 					const humEl = document.getElementById('hum');
 					const statusEl = document.getElementById('status');
 
+					console.debug('/api/sensor', data);
+
 					if (data.error) {
 						statusEl.textContent = 'Error: ' + data.error;
 						tempEl.textContent = '— °C';
@@ -52,6 +70,19 @@
 						statusEl.classList.remove('error');
 						tempEl.textContent = (data.temperature_c !== null) ? data.temperature_c + ' °C' : '— °C';
 						humEl.textContent = (data.humidity !== null) ? data.humidity + ' %' : '— %';
+						const motionEl = document.getElementById('motion');
+						// Prefer explicit motion_status when available
+						const status = data.motion_status ?? (data.motion === true ? 'detected' : (data.motion === false ? 'none' : 'unknown'));
+						if (status === 'detected') {
+							motionEl.textContent = 'Detected';
+							motionEl.style.color = '#0b6';
+						} else if (status === 'none') {
+							motionEl.textContent = 'No motion';
+							motionEl.style.color = '#666';
+						} else {
+							motionEl.textContent = data.motion_error ? ('Err: ' + data.motion_error) : 'Unknown';
+							motionEl.style.color = '#c00';
+						}
 					}
 				} catch (e) {
 					document.getElementById('status').textContent = 'Fetch error';

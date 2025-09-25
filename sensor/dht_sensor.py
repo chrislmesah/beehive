@@ -7,6 +7,9 @@ the module falls back to a deterministic mock for development and testing.
 from typing import Dict, Optional
 import time
 import random
+import json
+import os
+from datetime import datetime
 
 
 # Try to import hardware-specific libraries. If unavailable, we'll use a mock.
@@ -87,3 +90,99 @@ if __name__ == "__main__":
         else:
             print(f"Temp={r['temperature_c']:0.1f}°C  Humidity={r['humidity']:0.1f}%")
         time.sleep(2.0)
+
+
+# Interpretation rules and persistence
+RECORDS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "dht_records.json")
+os.makedirs(os.path.dirname(RECORDS_PATH), exist_ok=True)
+
+
+def interpret_reading(reading: Dict[str, Optional[float]]) -> Dict[str, Optional[str]]:
+    """Interpret temperature and humidity according to hive rules.
+
+    Returns a dict with 'temperature_status' and 'humidity_status' keys.
+    """
+    temp = reading.get("temperature_c")
+    hum = reading.get("humidity")
+    temp_status = None
+    hum_status = None
+
+    if temp is None:
+        temp_status = "unknown"
+    else:
+        if 32 <= temp <= 36:
+            temp_status = "ideal"
+        elif temp < 30:
+            temp_status = "too_cold"
+        elif temp > 38:
+            temp_status = "overheating"
+        else:
+            temp_status = "warning"
+
+    if hum is None:
+        hum_status = "unknown"
+    else:
+        if 50 <= hum <= 65:
+            hum_status = "ideal"
+        elif hum < 40:
+            hum_status = "too_dry"
+        elif hum > 70:
+            hum_status = "too_damp"
+        else:
+            hum_status = "warning"
+
+    return {"temperature_status": temp_status, "humidity_status": hum_status}
+
+
+def _save_record(record: Dict) -> None:
+    try:
+        records = []
+        if os.path.exists(RECORDS_PATH):
+            with open(RECORDS_PATH, "r", encoding="utf-8") as f:
+                try:
+                    records = json.load(f)
+                except Exception:
+                    records = []
+        records.append(record)
+        with open(RECORDS_PATH, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=2, ensure_ascii=False)
+    except Exception:
+        # Persistence errors shouldn't crash the sensor read path
+        pass
+
+
+def get_reading_with_interpretation() -> Dict:
+    """Return a reading augmented with interpretation and save it with timestamp.
+
+    Output shape:
+    {
+      "timestamp": "2025-09-25T12:34:56Z",
+      "temperature_c": 33.2,
+      "humidity": 56.1,
+      "error": None,
+      "interpretation": { ... }
+    }
+    """
+    base = get_reading()
+    interp = interpret_reading(base)
+    record = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "temperature_c": base.get("temperature_c"),
+        "humidity": base.get("humidity"),
+        "error": base.get("error"),
+        "interpretation": interp,
+    }
+    _save_record(record)
+    return record
+
+
+def read_saved_records(limit: int = 100) -> list:
+    """Return saved records (most recent last)."""
+    if not os.path.exists(RECORDS_PATH):
+        return []
+    try:
+        with open(RECORDS_PATH, "r", encoding="utf-8") as f:
+            records = json.load(f)
+            return records[-limit:]
+    except Exception:
+        return []

@@ -1,4 +1,24 @@
-Adafruit-Blinka==8.66.0
+# Core runtime
+Flask>=2.0
+
+# Camera / CV
+picamera2
+opencv-python
+numpy
+
+# Motion sensor library (gpiozero) - typically available on Raspberry Pi
+gpiozero>=1.7
+
+# DHT sensor dependencies (if using Adafruit libraries / Blinka on Raspberry Pi)
+adafruit-blinka
+adafruit-circuitpython-dht
+
+# Tests
+pytest>=7.0
+
+# Notes:
+# - On Raspberry Pi, install system packages for gpio access as documented by gpiozero.
+# - Adafruit libraries may require additional OS-level packages (libgpiod, etc.).Adafruit-Blinka==8.66.0
 Adafruit-Blinka-Raspberry-Pi5-Neopixel==1.0.0rc2
 adafruit-circuitpython-busdevice==5.2.13
 adafruit-circuitpython-connectionmanager==3.1.5

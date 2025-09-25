@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2025-09-25T10:13:33.286321Z",
+    "temperature_c": null,
+    "humidity": null,
+    "error": "A full buffer was not returned. Try again.",
+    "interpretation": {
+      "temperature_status": "unknown",
+      "humidity_status": "unknown"
+    }
+  }
+]

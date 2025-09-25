@@ -34,3 +34,6 @@ body{
   .readings{flex-direction:column}
   .reading p{font-size:1.6rem}
 }
+
+.camera-card img#cameraFeed{display:block;width:100%;height:auto;border-radius:8px}
+.camera-wrapper{max-width:720px;margin:8px auto}
