@@ -154,25 +154,33 @@ def _save_record(record: Dict) -> None:
 def get_reading_with_interpretation() -> Dict:
     """Return a reading augmented with interpretation and save it with timestamp.
 
-    Output shape:
-    {
-      "timestamp": "2025-09-25T12:34:56Z",
-      "temperature_c": 33.2,
-      "humidity": 56.1,
-      "error": None,
-      "interpretation": { ... }
-    }
+        Output shape (stored record does NOT include the runtime "error" field):
+        {
+            "timestamp": "2025-09-25T12:34:56Z",
+            "temperature_c": 33.2,
+            "humidity": 56.1,
+            "interpretation": { ... }
+        }
     """
     base = get_reading()
     interp = interpret_reading(base)
+    # Persist only the timestamp, sensor values and interpretation. The
+    # transient `error` field from the live reading is intentionally omitted
+    # so stored historical records contain only measured values and derived
+    # interpretation.
     record = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "temperature_c": base.get("temperature_c"),
         "humidity": base.get("humidity"),
-        "error": base.get("error"),
         "interpretation": interp,
     }
-    _save_record(record)
+
+    # Only persist records when both temperature and humidity are actual
+    # numeric readings. If either value is None (indicating a failed read),
+    # do not write a historical record.
+    if record["temperature_c"] is not None and record["humidity"] is not None:
+        _save_record(record)
+
     return record
 
 

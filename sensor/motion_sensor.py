@@ -10,9 +10,11 @@ from datetime import datetime
 _HARDWARE_AVAILABLE = True
 _PIR = None
 _last_state = None  # tracks last known motion state (True/False/None)
+_LED = None
 
 try:
     from gpiozero import MotionSensor  # type: ignore
+    from gpiozero import LED  # type: ignore
 except Exception:
     # gpiozero may not be available in test or non-RPi environments.
     _HARDWARE_AVAILABLE = False
@@ -44,7 +46,10 @@ def get_state() -> Dict[str, Optional[object]]:
             return {"motion": None, "error": str(e)}
 
     try:
-        return {"motion": bool(_PIR.motion_detected), "error": None}
+        motion = bool(_PIR.motion_detected)
+        # Keep _last_state and LED in sync when queried
+        _update_state(motion)
+        return {"motion": motion, "error": None}
     except Exception as e:
         return {"motion": None, "error": str(e)}
 
@@ -64,10 +69,28 @@ def _update_state(new_state: Optional[bool]):
 
     new_state: True => motion detected, False => no motion, None => unknown/error
     """
-    global _last_state
+    global _last_state, _LED
     if new_state == _last_state:
         return
     _last_state = new_state
+
+    # Ensure LED object exists (best-effort)
+    if _LED is None and _HARDWARE_AVAILABLE:
+        try:
+            _LED = LED(2)
+        except Exception:
+            _LED = None
+
+    # Toggle LED according to motion
+    try:
+        if _LED is not None:
+            if new_state is True:
+                _LED.on()
+            else:
+                _LED.off()
+    except Exception:
+        pass
+
     if new_state is True:
         print(f"{timestamp()} Motion detected")
     elif new_state is False:

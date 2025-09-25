@@ -21,6 +21,15 @@ body{
 .site-header{background:transparent;padding:24px 20px 6px;text-align:center}
 .site-header h1{margin:0;font-size:1.6rem}
 .subtitle{color:var(--muted);margin:6px 0 0}
+.main-nav{margin-top:8px}
+.main-nav a{color:#fff;background:var(--accent);padding:6px 10px;border-radius:8px;text-decoration:none;margin:0 6px;font-weight:600}
+.main-nav a:hover{opacity:0.9}
+.main-nav a[data-active="true"]{box-shadow:0 4px 12px rgba(15,23,42,0.12);transform:translateY(-1px)}
+
+@media (max-width:720px){
+  .main-nav{display:flex;flex-wrap:wrap;justify-content:center}
+  .main-nav a{margin:4px}
+}
 .container{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;gap:var(--gap)}
 .card{background:var(--card);box-shadow:0 6px 18px rgba(15,23,42,0.06);border-radius:var(--radius);padding:20px;max-width:640px;width:100%}
 .readings{display:flex;gap:20px;justify-content:space-between}
@@ -37,3 +46,7 @@ body{
 
 .camera-card img#cameraFeed{display:block;width:100%;height:auto;border-radius:8px}
 .camera-wrapper{max-width:720px;margin:8px auto}
+
+/* Camera page specific */
+.controls { margin-bottom: 12px; }
+.controls label { margin-right: 8px; }

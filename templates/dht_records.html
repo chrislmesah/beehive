@@ -3,39 +3,43 @@
   <head>
     <meta charset="utf-8">
     <title>DHT Records</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 24px; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { padding: 8px; border: 1px solid #ddd; }
-      th { background: #f4f4f4; }
-      .ideal { color: green; }
-      .warning { color: orange; }
-      .bad { color: red; }
-    </style>
+    <link rel="stylesheet" href="/static/css/styles.css">
   </head>
   <body>
-    <h1>DHT Saved Records</h1>
-    <p><a href="/">Back</a> | <a href="/api/dht_record">Save new reading (API)</a></p>
-    {% if records %}
-    <table>
-      <thead>
-        <tr><th>Timestamp (UTC)</th><th>Temperature (°C)</th><th>Temp Status</th><th>Humidity (%)</th><th>Hum Status</th><th>Error</th></tr>
-      </thead>
-      <tbody>
-      {% for r in records %}
-        <tr>
-          <td>{{ r.timestamp }}</td>
-          <td>{{ r.temperature_c }}</td>
-          <td class="{{ 'ideal' if r.interpretation.temperature_status=='ideal' else ('bad' if r.interpretation.temperature_status in ['too_cold','overheating'] else 'warning') }}">{{ r.interpretation.temperature_status }}</td>
-          <td>{{ r.humidity }}</td>
-          <td class="{{ 'ideal' if r.interpretation.humidity_status=='ideal' else ('bad' if r.interpretation.humidity_status in ['too_dry','too_damp'] else 'warning') }}">{{ r.interpretation.humidity_status }}</td>
-          <td>{{ r.error }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-      <p>No records saved yet.</p>
-    {% endif %}
+    <header class="site-header">
+      <h1>DHT Records</h1>
+      <nav class="main-nav">
+        <a href="/">Dashboard</a>
+        <a href="/camera">Camera</a>
+        <a href="/dht_records">DHT Records</a>
+      </nav>
+    </header>
+    <main class="container">
+      <div class="card">
+        <p><a href="/api/dht_record">Save new reading (API)</a></p>
+      {% if records %}
+      <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr><th>Timestamp (UTC)</th><th>Temperature (°C)</th><th>Temp Status</th><th>Humidity (%)</th><th>Hum Status</th></tr>
+        </thead>
+        <tbody>
+        {% for r in records %}
+          <tr>
+            <td>{{ r.timestamp }}</td>
+            <td>{{ r.temperature_c }}</td>
+            <td class="{{ 'ideal' if r.interpretation.temperature_status=='ideal' else ('bad' if r.interpretation.temperature_status in ['too_cold','overheating'] else 'warning') }}">{{ r.interpretation.temperature_status }}</td>
+            <td>{{ r.humidity }}</td>
+            <td class="{{ 'ideal' if r.interpretation.humidity_status=='ideal' else ('bad' if r.interpretation.humidity_status in ['too_dry','too_damp'] else 'warning') }}">{{ r.interpretation.humidity_status }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+        <p>No records saved yet.</p>
+      {% endif %}
+      </div>
+    </main>
   </body>
 </html>

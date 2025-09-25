@@ -11,7 +11,7 @@
 			<h1>Beehive Monitor</h1>
 			<p class="subtitle">Live temperature & humidity</p>
 			<nav class="main-nav">
-				<a href="/">Dashboard</a> |
+				<a href="/" data-active="true">Dashboard</a> |
 				<a href="/camera">Camera</a> |
 				<a href="/dht_records">DHT Records</a>
 			</nav>
@@ -21,77 +21,117 @@
 			<section class="card readings">
 				<div class="reading">
 					<h2>Temperature</h2>
-					<p id="temp">— °C</p>
+					<p id="temp">{% if last_record %}{{ last_record.temperature_c }} °C{% else %}— °C{% endif %}</p>
 				</div>
 				<div class="reading">
 					<h2>Humidity</h2>
-					<p id="hum">— %</p>
+					<p id="hum">{% if last_record %}{{ last_record.humidity }} %{% else %}— %{% endif %}</p>
 				</div>
 				<div class="reading">
 					<h2>Motion</h2>
-					<p id="motion">—</p>
+					<p id="motion">{% if initial_motion_status %}{{ initial_motion_status }}{% else %}—{% endif %}</p>
 				</div>
 			</section>
 
 			<section class="card camera-card">
-				<h2>Camera</h2>
-				<div class="camera-wrapper">
-					<img id="cameraFeed" src="/camera_feed" alt="Camera feed" />
-				</div>
+				<!-- Camera moved to dedicated /camera page -->
 			</section>
 
 			<section class="card status" id="status">
 				Loading sensor...
 			</section>
+
+			<section class="card" id="graphs-card">
+				<h2>Sensor Graphs</h2>
+				<div id="graphs" style="display:block;width:100%;margin:0;padding:0 12px;">
+									<div id="tempHeatmap" style="height:320px;" class="graph-card"></div>
+									<div id="humDailyLine" style="height:320px;" class="graph-card"></div>
+									<div id="tempBox" style="height:300px;" class="graph-card"></div>
+									<div id="humBox" style="height:300px;" class="graph-card"></div>
+								</div>
+			</section>
 		</main>
 
 		<footer class="site-footer">
-			<small>Updated every 2 seconds · Local demo uses a mock if hardware is unavailable</small>
+			<small>Updated every 5 seconds · Local demo uses a mock if hardware is unavailable</small>
 		</footer>
 
 		<script>
-			async function fetchReading() {
-				try {
-					const res = await fetch('/api/sensor');
-					const data = await res.json();
-					const tempEl = document.getElementById('temp');
-					const humEl = document.getElementById('hum');
-					const statusEl = document.getElementById('status');
+		// Load Plotly and draw charts similar to the sample provided
+		const plotlyScript = document.createElement('script');
+		plotlyScript.src = 'https://cdn.plot.ly/plotly-latest.min.js';
+		document.head.appendChild(plotlyScript);
 
-					console.debug('/api/sensor', data);
+		async function loadCurrentReading(){
+			try{
+				const res = await fetch('/api/sensor');
+				const d = await res.json();
+				const temp = d.temperature_c;
+				const hum = d.humidity;
+				const motion = d.motion === true;
+				const ts = new Date().toISOString();
+				// Preserve previous displayed values when sensor reports null/undefined.
+				const tempEl = document.getElementById('temp');
+				const humEl = document.getElementById('hum');
+				const motionEl = document.getElementById('motion');
 
-					if (data.error) {
-						statusEl.textContent = 'Error: ' + data.error;
-						tempEl.textContent = '— °C';
-						humEl.textContent = '— %';
-						statusEl.classList.add('error');
-					} else {
-						statusEl.textContent = 'OK';
-						statusEl.classList.remove('error');
-						tempEl.textContent = (data.temperature_c !== null) ? data.temperature_c + ' °C' : '— °C';
-						humEl.textContent = (data.humidity !== null) ? data.humidity + ' %' : '— %';
-						const motionEl = document.getElementById('motion');
-						// Prefer explicit motion_status when available
-						const status = data.motion_status ?? (data.motion === true ? 'detected' : (data.motion === false ? 'none' : 'unknown'));
-						if (status === 'detected') {
-							motionEl.textContent = 'Detected';
-							motionEl.style.color = '#0b6';
-						} else if (status === 'none') {
-							motionEl.textContent = 'No motion';
-							motionEl.style.color = '#666';
-						} else {
-							motionEl.textContent = data.motion_error ? ('Err: ' + data.motion_error) : 'Unknown';
-							motionEl.style.color = '#c00';
-						}
-					}
-				} catch (e) {
-					document.getElementById('status').textContent = 'Fetch error';
+				if (temp !== null && temp !== undefined) {
+					tempEl.textContent = `${temp} °C`;
 				}
-			}
+				if (hum !== null && hum !== undefined) {
+					humEl.textContent = `${hum} %`;
+				}
+				// Motion is a boolean; if absent, don't change the displayed state.
+				if (d.motion === true) {
+					motionEl.textContent = 'Detected';
+				} else if (d.motion === false) {
+					motionEl.textContent = 'None';
+				}
+				document.getElementById('status').textContent = `Last: ${ts}`;
+			}catch(e){ console.warn('Current read failed', e); }
+		}
 
-			// Poll every 2s
-			fetchReading();
-			setInterval(fetchReading, 2000);
+		async function loadHistoryAndPlot(){
+			try{
+				const res = await fetch('/api/dht_records');
+				const history = await res.json();
+				if(!history || !history.length) return;
+
+				const timestamps = history.map(r=>r.timestamp);
+				const temps = history.map(r=>r.temperature_c===null?null:r.temperature_c);
+				const hums = history.map(r=>r.humidity===null?null:r.humidity);
+				const motions = history.map(r=> r.motion ? 1 : 0 );
+
+				// Temperature scatter with color scale
+				const tempTrace = {
+					x: timestamps,
+					y: temps,
+					type: 'scatter',
+					mode: 'lines+markers',
+					marker: { color: temps, colorscale: [[0,'blue'],[0.3,'cyan'],[0.6,'orange'],[1,'red']], size:8, colorbar:{title:'Temp °C'} },
+					line: { color: 'lightgray' },
+					name: 'Temperature'
+				};
+				const tempLayout = { title: 'Temperature (°C)', xaxis:{title:'Time (UTC)'}, yaxis:{title:'°C'} };
+				if(window.Plotly) Plotly.react('tempHeatmap',[tempTrace],tempLayout); else plotlyScript.onload = ()=>Plotly.react('tempHeatmap',[tempTrace],tempLayout);
+
+				// Humidity line
+				const humTrace = { x: timestamps, y: hums, type:'scatter', mode:'lines+markers', line:{color:'royalblue'}, name:'Humidity' };
+				const humLayout = { title: 'Humidity (%)', xaxis:{title:'Time (UTC)'}, yaxis:{title:'%'} };
+				if(window.Plotly) Plotly.react('humDailyLine',[humTrace],humLayout); else plotlyScript.onload = ()=>Plotly.react('humDailyLine',[humTrace],humLayout);
+
+				// Motion bars (if motion is present in history)
+				const motionTrace = { x: timestamps, y: motions, type:'bar', marker:{color:'seagreen'}, name:'Motion' };
+				const motionLayout = { title: 'Motion (0/1)', xaxis:{title:'Time (UTC)'}, yaxis:{title:'Motion'} };
+				if(window.Plotly) Plotly.react('humBox',[motionTrace],motionLayout); else plotlyScript.onload = ()=>Plotly.react('humBox',[motionTrace],motionLayout);
+
+			}catch(e){ console.warn('History load failed', e); }
+		}
+
+		// initial load and interval (5s polling)
+		loadCurrentReading();
+		loadHistoryAndPlot();
+		setInterval(()=>{ loadCurrentReading(); loadHistoryAndPlot(); }, 5000);
 		</script>
 	</body>
 </html>

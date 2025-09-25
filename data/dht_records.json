@@ -8,5 +8,100 @@
       "temperature_status": "unknown",
       "humidity_status": "unknown"
     }
+  },
+  {
+    "timestamp": "2025-09-25T10:52:50.441408Z",
+    "temperature_c": null,
+    "humidity": null,
+    "error": "DHT sensor not found, check wiring",
+    "interpretation": {
+      "temperature_status": "unknown",
+      "humidity_status": "unknown"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T11:13:19.743671Z",
+    "temperature_c": 25.3,
+    "humidity": 52.0,
+    "error": null,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "ideal"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T13:47:16.328511Z",
+    "temperature_c": null,
+    "humidity": null,
+    "error": "Checksum did not validate. Try again.",
+    "interpretation": {
+      "temperature_status": "unknown",
+      "humidity_status": "unknown"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T13:47:25.161702Z",
+    "temperature_c": 26.1,
+    "humidity": 47.0,
+    "error": null,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T13:47:34.755875Z",
+    "temperature_c": 26.0,
+    "humidity": 47.0,
+    "error": null,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T15:33:54.591773Z",
+    "temperature_c": 26.4,
+    "humidity": 45.0,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T15:34:09.572122Z",
+    "temperature_c": 26.4,
+    "humidity": 45.0,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T15:34:44.257816Z",
+    "temperature_c": 26.4,
+    "humidity": 45.0,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T15:34:46.932908Z",
+    "temperature_c": 26.4,
+    "humidity": 45.0,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
+  },
+  {
+    "timestamp": "2025-09-25T15:35:07.248784Z",
+    "temperature_c": 26.5,
+    "humidity": 45.0,
+    "interpretation": {
+      "temperature_status": "too_cold",
+      "humidity_status": "warning"
+    }
   }
 ]

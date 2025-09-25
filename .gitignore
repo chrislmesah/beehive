@@ -1,3 +1,6 @@
 hive/
-.gitignore/
-.env/
+.idea/
+.vscode/
+data/
+# .lgd-nfy0
+.env

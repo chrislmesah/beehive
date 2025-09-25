@@ -6,7 +6,22 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 
 @app.route("/")
 def index():
-	return render_template("index.html")
+	# Provide the last saved DHT record (if any) and an initial motion status
+	# so the dashboard can display data immediately on page load.
+	from sensor.dht_sensor import read_saved_records
+	from sensor.motion_sensor import get_state as get_motion_state
+
+	last = read_saved_records(1)
+	last_record = last[-1] if last else None
+	motion = get_motion_state()
+	if motion.get("motion") is True:
+		motion_status = "Detected"
+	elif motion.get("motion") is False:
+		motion_status = "None"
+	else:
+		motion_status = "Unknown"
+
+	return render_template("index.html", last_record=last_record, initial_motion_status=motion_status)
 
 
 
@@ -33,16 +48,41 @@ def camera_feed():
 @app.route("/api/sensor")
 def sensor_api():
 	# Import here to avoid failing import if hardware libs aren't present at module import time
-	from sensor.dht_sensor import get_reading
+	from sensor.dht_sensor import get_reading, get_reading_with_interpretation, read_saved_records
 	from sensor.motion_sensor import get_state as get_motion_state
 
-	reading = get_reading()
+	# Attempt a live read first. If the live read contains actual numeric
+	# temperature and humidity values we return that (and persist it). If the
+	# live read failed, fall back to the last persisted valid record so the
+	# UI always has something to display immediately.
+	base = get_reading()
+	reading = {}
+	if base.get('temperature_c') is None or base.get('humidity') is None:
+		# fallback to last saved
+		saved = read_saved_records(1)
+		if saved:
+			last = saved[-1]
+			reading['temperature_c'] = last.get('temperature_c')
+			reading['humidity'] = last.get('humidity')
+			reading['timestamp'] = last.get('timestamp')
+			reading['interpretation'] = last.get('interpretation')
+		else:
+			reading['temperature_c'] = None
+			reading['humidity'] = None
+	else:
+		# valid live read: obtain an interpreted record (this also persists it)
+		rec = get_reading_with_interpretation()
+		reading['temperature_c'] = rec.get('temperature_c')
+		reading['humidity'] = rec.get('humidity')
+		reading['timestamp'] = rec.get('timestamp')
+		reading['interpretation'] = rec.get('interpretation')
 	motion = get_motion_state()
 
 	# merge motion info into the response
 	reading["motion"] = motion.get("motion")
-	if motion.get("error"):
-		reading["motion_error"] = motion.get("error")
+	# Do not expose transient error strings in the API response. Keep only
+	# the measured values and motion boolean/status so the UI doesn't show
+	# low-level error messages.
 
 	# Add an explicit status string for easier UI handling
 	if motion.get("motion") is True:
@@ -52,7 +92,11 @@ def sensor_api():
 	else:
 		reading["motion_status"] = "unknown"
 
-	# Debug log to server console
+	# Remove any transient 'error' keys from sensors before returning
+	reading.pop('error', None)
+	reading.pop('motion_error', None)
+
+	# Debug log to server console (concise)
 	print(f"/api/sensor -> temp={reading.get('temperature_c')} hum={reading.get('humidity')} motion={reading.get('motion_status')}")
 
 	return jsonify(reading)
@@ -68,6 +112,18 @@ def dht_records_page():
 @app.route('/camera')
 def camera_page():
 	return render_template('camera.html')
+
+
+@app.route('/dht_graph')
+def dht_graph_page():
+	return render_template('dht_graph.html')
+
+
+@app.route('/api/dht_records')
+def dht_records_api():
+	from sensor.dht_sensor import read_saved_records
+	records = read_saved_records(1000)
+	return jsonify(records)
 
 
 @app.route('/api/dht_record')

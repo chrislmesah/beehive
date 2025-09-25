@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>DHT Graphs</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+      #graphs { display:flex; flex-direction:column; gap:20px; max-width:960px; margin:20px auto }
+      .graph-card { background:white;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06) }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>DHT Graphs</h1>
+      <nav class="main-nav">
+        <a href="/">Dashboard</a>
+        <a href="/camera">Camera</a>
+        <a href="/dht_records">DHT Records</a>
++        <a href="/dht_graph" data-active="true">Graphs</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <div id="graphs">
+        <div class="graph-card"><div id="tempGraph" style="height:340px;"></div></div>
+        <div class="graph-card"><div id="humGraph" style="height:340px;"></div></div>
+      </div>
+    </main>
+
+    <script>
+      const IDEAL_TEMP_MIN = 32, IDEAL_TEMP_MAX = 36;
+      const IDEAL_HUM_MIN = 50, IDEAL_HUM_MAX = 65;
+
+      async function fetchRecords(){
+        const res = await fetch('/api/dht_records');
+        return res.json();
+      }
+
+      function toTrace(records, key){
+        return {
+          x: records.map(r => new Date(r.timestamp)),
+          y: records.map(r => r[key]),
+          mode: 'lines+markers',
+          name: key,
+        };
+      }
+
+      function draw(){
+        fetchRecords().then(records => {
+          // Filter out nulls
+          const tempRecords = records.filter(r => r.temperature_c !== null && r.temperature_c !== undefined);
+          const humRecords = records.filter(r => r.humidity !== null && r.humidity !== undefined);
+
+          const tempTrace = {
+            x: tempRecords.map(r => new Date(r.timestamp)),
+            y: tempRecords.map(r => r.temperature_c),
+            mode: 'lines',
+            fill: 'tozeroy',
+            name: 'Temperature (°C)',
+            line: {color: 'crimson'}
+          };
+
+          const tempLayout = {
+            title: 'Temperature over time',
+            xaxis: {title: 'Time (UTC)'},
+            yaxis: {title: 'Temperature (°C)'},
+            shapes: [
+              // ideal band
+              {type: 'rect', xref: 'paper', x0:0, x1:1, yref:'y', y0: IDEAL_TEMP_MIN, y1: IDEAL_TEMP_MAX, fillcolor: 'rgba(0,200,0,0.08)', line: {width:0}}
+            ]
+          };
+
+          Plotly.newPlot('tempGraph', [tempTrace], tempLayout, {responsive:true});
+
+          const humTrace = {
+            x: humRecords.map(r => new Date(r.timestamp)),
+            y: humRecords.map(r => r.humidity),
+            mode: 'lines',
+            fill: 'tozeroy',
+            name: 'Humidity (%)',
+            line: {color: 'royalblue'}
+          };
+          const humLayout = {
+            title: 'Humidity over time',
+            xaxis: {title: 'Time (UTC)'},
+            yaxis: {title: 'Humidity (%)'},
+            shapes: [
+              {type: 'rect', xref: 'paper', x0:0, x1:1, yref:'y', y0: IDEAL_HUM_MIN, y1: IDEAL_HUM_MAX, fillcolor: 'rgba(0,200,0,0.08)', line: {width:0}}
+            ]
+          };
+
+          Plotly.newPlot('humGraph', [humTrace], humLayout, {responsive:true});
+        });
+      }
+
+      draw();
+      // Refresh every 5s
+      setInterval(draw, 5000);
+    </script>
+  </body>
+</html>
